@@ -64,89 +64,8 @@ const ViewToggle = styled.button<{ splitView: boolean }>`
   }
 `;
 
-const LoadingOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(30, 60, 114, 0.95);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  backdrop-filter: blur(10px);
-`;
-
-const LoadingSpinner = styled.div`
-  width: 60px;
-  height: 60px;
-  border: 4px solid rgba(255, 255, 255, 0.3);
-  border-top: 4px solid #ffffff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 24px;
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-`;
-
-const LoadingText = styled.div`
-  color: white;
-  font-size: 18px;
-  font-weight: 500;
-  text-align: center;
-  margin-bottom: 8px;
-`;
-
-const LoadingSubtext = styled.div`
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 14px;
-  text-align: center;
-`;
-
-const ErrorOverlay = styled.div`
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(102, 126, 234, 0.95);
-  color: white;
-  padding: 24px 32px;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  z-index: 9999;
-  max-width: 400px;
-  text-align: center;
-  backdrop-filter: blur(10px);
-`;
-
-const RefreshButton = styled.button`
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-top: 16px;
-  font-size: 14px;
-  transition: all 0.3s ease;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-`;
-
 function App() {
-  const { data, loading, error, refreshData, lastUpdate } = useAirQuality(true, 300000);
+  const { data, loading, error, refreshData, lastUpdate } = useAirQuality(true, 300000); // Refresh cada 5 minutos
   const [selectedLocation, setSelectedLocation] = useState<AirQualityData | null>(null);
   const [showSplit, setShowSplit] = useState(false);
 
@@ -186,9 +105,7 @@ function App() {
           <LoadingOverlay>
             <LoadingSpinner />
             <LoadingText>Cargando datos de calidad del aire</LoadingText>
-            <LoadingSubtext>
-              Obteniendo información de {data.length > 0 ? data.length : '60+'} ciudades de España...
-            </LoadingSubtext>
+            <LoadingSubtext>Obteniendo información de {data.length > 0 ? data.length : '60+'} ciudades de España...</LoadingSubtext>
           </LoadingOverlay>
         )}
 
@@ -269,5 +186,86 @@ function App() {
     </>
   );
 }
+
+const LoadingOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(30, 60, 114, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(10px);
+`;
+
+const LoadingSpinner = styled.div`
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 24px;
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
+const LoadingText = styled.div`
+  color: white;
+  font-size: 18px;
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 8px;
+`;
+
+const LoadingSubtext = styled.div`
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  text-align: center;
+`;
+
+const ErrorOverlay = styled.div`
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(220, 38, 38, 0.95);
+  color: white;
+  padding: 24px 32px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+  max-width: 400px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+`;
+
+const RefreshButton = styled.button`
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 16px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
 
 export default App;
