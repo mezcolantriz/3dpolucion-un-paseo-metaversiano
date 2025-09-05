@@ -6,8 +6,23 @@ import { AirQualityColors, AirQualityLevel as AQL } from '../types';
 import { getQualityDescription } from '../utils';
 
 const SidePanel = styled(motion.div)<{ isOpen: boolean }>`
-  position: fixed;
-  left: ${props => props.isOpen ? '0' : '-400px'};
+  posi            <FilterButton
+              active={sortBy === 'aqi'}
+              onClick={() => handleSortChange('aqi')}
+            >
+              AQI ↓
+            </FilterButton>
+            <FilterButton
+              active={sortBy === 'name'}
+              onClick={() => handleSortChange('name')}
+            >
+              Nombre ↓
+            </FilterButton>
+            <FilterButton
+              active={sortBy === 'pm25'}
+              onClick={() => handleSortChange('pm25')}
+            >
+              PM2.5 ↓eft: ${props => props.isOpen ? '0' : '-400px'};
   top: 0;
   width: 380px;
   height: 100vh;
@@ -251,17 +266,62 @@ interface FilterPanelProps {
   airQualityData: AirQualityData[];
   onLocationSelect: (data: AirQualityData) => void;
   selectedLocation: AirQualityData | null;
+  // Props para filtros globales compartidos
+  searchTerm?: string;
+  onSearchChange?: (term: string) => void;
+  selectedFilters?: AirQualityLevel[];
+  onFiltersChange?: (filters: AirQualityLevel[]) => void;
+  sortBy?: 'aqi' | 'name' | 'pm25';
+  onSortChange?: (sort: 'aqi' | 'name' | 'pm25') => void;
 }
 
 export const FilterPanel: React.FC<FilterPanelProps> = ({
   airQualityData,
   onLocationSelect,
-  selectedLocation
+  selectedLocation,
+  searchTerm: externalSearchTerm,
+  onSearchChange,
+  selectedFilters: externalSelectedFilters,
+  onFiltersChange,
+  sortBy: externalSortBy,
+  onSortChange
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFilters, setSelectedFilters] = useState<AirQualityLevel[]>([]);
-  const [sortBy, setSortBy] = useState<'aqi' | 'name' | 'pm25'>('aqi');
+  
+  // Usar estado local si no hay props externas, sino usar las externas
+  const [localSearchTerm, setLocalSearchTerm] = useState('');
+  const [localSelectedFilters, setLocalSelectedFilters] = useState<AirQualityLevel[]>([]);
+  const [localSortBy, setLocalSortBy] = useState<'aqi' | 'name' | 'pm25'>('aqi');
+  
+  // Determinar qué estado usar
+  const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : localSearchTerm;
+  const selectedFilters = externalSelectedFilters !== undefined ? externalSelectedFilters : localSelectedFilters;
+  const sortBy = externalSortBy !== undefined ? externalSortBy : localSortBy;
+  
+  // Funciones para manejar cambios
+  const handleSearchChange = (term: string) => {
+    if (onSearchChange) {
+      onSearchChange(term);
+    } else {
+      setLocalSearchTerm(term);
+    }
+  };
+  
+  const handleFiltersChange = (filters: AirQualityLevel[]) => {
+    if (onFiltersChange) {
+      onFiltersChange(filters);
+    } else {
+      setLocalSelectedFilters(filters);
+    }
+  };
+  
+  const handleSortChange = (sort: 'aqi' | 'name' | 'pm25') => {
+    if (onSortChange) {
+      onSortChange(sort);
+    } else {
+      setLocalSortBy(sort);
+    }
+  };
 
   // Filtrar y ordenar datos
   const filteredData = useMemo(() => {
@@ -310,11 +370,10 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
   }, [airQualityData]);
 
   const toggleFilter = (level: AirQualityLevel) => {
-    setSelectedFilters(prev =>
-      prev.includes(level)
-        ? prev.filter(f => f !== level)
-        : [...prev, level]
-    );
+    const newFilters = selectedFilters.includes(level)
+      ? selectedFilters.filter((f: AirQualityLevel) => f !== level)
+      : [...selectedFilters, level];
+    handleFiltersChange(newFilters);
   };
 
   const qualityLevels = [
@@ -351,7 +410,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
             type="text"
             placeholder="Buscar por ciudad..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
           />
         </FilterSection>
 
@@ -360,19 +419,19 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
           <FilterGrid>
             <FilterButton
               active={sortBy === 'aqi'}
-              onClick={() => setSortBy('aqi')}
+              onClick={() => handleSortChange('aqi')}
             >
               AQI ↓
             </FilterButton>
             <FilterButton
               active={sortBy === 'name'}
-              onClick={() => setSortBy('name')}
+              onClick={() => handleSortChange('name')}
             >
               Nombre ↑
             </FilterButton>
             <FilterButton
               active={sortBy === 'pm25'}
-              onClick={() => setSortBy('pm25')}
+              onClick={() => handleSortChange('pm25')}
             >
               PM2.5 ↓
             </FilterButton>

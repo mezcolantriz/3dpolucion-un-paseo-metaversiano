@@ -73,9 +73,14 @@ export const AirQualityColors: Record<AirQualityLevel, string> = {
   [AirQualityLevel.HAZARDOUS]: '#7e0023'
 };
 
-// Solo 3 ciudades para el proyecto
+// 8 ciudades españolas estratégicamente distribuidas
 export const SpainCities: SpainRegion[] = [
   { name: 'Madrid', coordinates: [40.4168, -3.7038], cities: ['Madrid'] },
   { name: 'Murcia', coordinates: [37.9922, -1.1307], cities: ['Murcia'] },
   { name: 'Córdoba', coordinates: [37.8882, -4.7794], cities: ['Córdoba'] },
+  { name: 'Barcelona', coordinates: [41.3851, 2.1734], cities: ['Barcelona'] },
+  { name: 'Valencia', coordinates: [39.4699, -0.3763], cities: ['Valencia'] },
+  { name: 'Sevilla', coordinates: [37.3891, -5.9845], cities: ['Sevilla'] },
+  { name: 'Bilbao', coordinates: [43.2627, -2.9253], cities: ['Bilbao'] },
+  { name: 'Zaragoza', coordinates: [41.6488, -0.8891], cities: ['Zaragoza'] },
 ];

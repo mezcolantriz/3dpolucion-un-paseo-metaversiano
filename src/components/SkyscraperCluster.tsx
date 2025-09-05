@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { AirQualityLevel } from '../types';
@@ -8,8 +8,11 @@ export const SkyscraperCluster: React.FC<{
   position: [number, number, number];
   color: string;
   airQuality: AirQualityLevel;
-}> = ({ aqi, position, color }) => {
+  onClick?: () => void;
+  isSelected?: boolean;
+}> = ({ aqi, position, color, onClick, isSelected = false }) => {
   const groupRef = useRef<THREE.Group>(null);
+  const [isHovered, setIsHovered] = useState(false);
   
   // Determinar número de rascacielos según AQI
   const buildingCount = useMemo(() => {
@@ -109,7 +112,24 @@ export const SkyscraperCluster: React.FC<{
   }, [aqi, color]);
 
   return (
-    <group ref={groupRef} position={position}>
+    <group 
+      ref={groupRef} 
+      position={position}
+      onClick={onClick}
+      onPointerEnter={() => setIsHovered(true)}
+      onPointerLeave={() => setIsHovered(false)}
+    >
+      {/* Efecto de selección */}
+      {(isSelected || isHovered) && (
+        <mesh position={[0, 0.1, 0]}>
+          <cylinderGeometry args={[0.4, 0.45, 0.05, 16]} />
+          <meshBasicMaterial
+            color={isSelected ? '#00ff00' : '#ffff00'}
+            transparent
+            opacity={0.6}
+          />
+        </mesh>
+      )}
       {/* Edificios del cluster */}
       {buildings.map((building, index) => (
         <Building

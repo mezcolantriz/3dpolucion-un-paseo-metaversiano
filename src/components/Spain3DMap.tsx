@@ -61,16 +61,21 @@ const InfoDisplay = styled.div`
 interface Spain3DMapProps {
   airQualityData: AirQualityData[];
   selectedLocation: AirQualityData | null;
-  filteredData?: AirQualityData[];
   onLocationSelect?: (location: AirQualityData | null) => void;
+  // Props para sincronizar filtros con el panel izquierdo
+  globalSearchTerm?: string;
+  globalSelectedFilters?: any[];
+  globalSortBy?: 'aqi' | 'name' | 'pm25';
 }
 
 // Componente principal del mapa 3D
 export const Spain3DMap: React.FC<Spain3DMapProps> = ({ 
   airQualityData, 
   selectedLocation,
-  filteredData = airQualityData,
-  onLocationSelect
+  onLocationSelect,
+  globalSearchTerm = '',
+  globalSelectedFilters = [],
+  globalSortBy = 'aqi'
 }) => {
   const [cameraMode, setCameraMode] = useState<'orbit' | 'fly' | 'overview'>('orbit');
   const [showAtmosphere, setShowAtmosphere] = useState(true);
@@ -78,20 +83,24 @@ export const Spain3DMap: React.FC<Spain3DMapProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'good' | 'moderate' | 'poor'>('all');
 
+  // Usar filtros globales si están disponibles, sino usar los locales
+  const effectiveSearchTerm = globalSearchTerm || searchTerm;
+  const effectiveFilters = globalSelectedFilters;
+
   // Filtrar datos localmente en el mapa 3D
   const localFilteredData = useMemo(() => {
-    let filtered = filteredData;
+    let filtered = airQualityData;
     
     // Filtro por búsqueda
-    if (searchTerm) {
-      filtered = filtered.filter(location =>
-        location.location.name.toLowerCase().includes(searchTerm.toLowerCase())
+    if (effectiveSearchTerm) {
+      filtered = filtered.filter((location: AirQualityData) =>
+        location.location.name.toLowerCase().includes(effectiveSearchTerm.toLowerCase())
       );
     }
     
     // Filtro por calidad del aire
     if (selectedFilter !== 'all') {
-      filtered = filtered.filter(location => {
+      filtered = filtered.filter((location: AirQualityData) => {
         switch (selectedFilter) {
           case 'good':
             return location.measurements.aqi <= 2;
@@ -106,7 +115,7 @@ export const Spain3DMap: React.FC<Spain3DMapProps> = ({
     }
     
     return filtered;
-  }, [filteredData, searchTerm, selectedFilter]);
+  }, [airQualityData, effectiveSearchTerm, effectiveFilters, selectedFilter]);
 
   return (
     <Canvas3DContainer>
@@ -226,7 +235,7 @@ export const Spain3DMap: React.FC<Spain3DMapProps> = ({
         <SpainTerrain />
         
         {/* Rascacielos por ubicación - SOLO DATOS FILTRADOS */}
-        {localFilteredData.map((data, index) => {
+        {localFilteredData.map((data: AirQualityData, index: number) => {
           const position = geoToScenePosition(
             data.location.latitude, 
             data.location.longitude
@@ -239,6 +248,8 @@ export const Spain3DMap: React.FC<Spain3DMapProps> = ({
               position={position}
               color={AirQualityColors[data.quality]}
               airQuality={data.quality}
+              onClick={() => onLocationSelect?.(data)}
+              isSelected={selectedLocation?.location.name === data.location.name}
             />
           );
         })}

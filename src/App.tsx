@@ -4,7 +4,7 @@ import { SpainMap } from './components/SpainMap';
 import { Spain3DMap } from './components/Spain3DMap';
 import { FilterPanel } from './components/FilterPanel';
 import { useAirQuality } from './hooks/useAirQuality';
-import type { AirQualityData } from './types';
+import type { AirQualityData, AirQualityLevel } from './types';
 
 const GlobalStyle = createGlobalStyle`
   * {
@@ -149,6 +149,11 @@ function App() {
   const { data, loading, error, refreshData, lastUpdate } = useAirQuality(true, 300000);
   const [selectedLocation, setSelectedLocation] = useState<AirQualityData | null>(null);
   const [showSplit, setShowSplit] = useState(false);
+  
+  // Estados compartidos para filtros entre panel izquierdo y mapa 3D
+  const [globalSearchTerm, setGlobalSearchTerm] = useState('');
+  const [globalSelectedFilters, setGlobalSelectedFilters] = useState<any[]>([]);
+  const [globalSortBy, setGlobalSortBy] = useState<'aqi' | 'name' | 'pm25'>('aqi');
 
   const handleLocationSelect = (locationData: AirQualityData) => {
     setSelectedLocation(locationData);
@@ -172,6 +177,12 @@ function App() {
           airQualityData={data}
           onLocationSelect={handleLocationSelect}
           selectedLocation={selectedLocation}
+          searchTerm={globalSearchTerm}
+          onSearchChange={setGlobalSearchTerm}
+          selectedFilters={globalSelectedFilters}
+          onFiltersChange={setGlobalSelectedFilters}
+          sortBy={globalSortBy}
+          onSortChange={setGlobalSortBy}
         />
 
         {/* Botón para alternar vista dividida */}
@@ -222,6 +233,9 @@ function App() {
             airQualityData={data}
             selectedLocation={selectedLocation}
             onLocationSelect={setSelectedLocation}
+            globalSearchTerm={globalSearchTerm}
+            globalSelectedFilters={globalSelectedFilters}
+            globalSortBy={globalSortBy}
           />
         )}
 
