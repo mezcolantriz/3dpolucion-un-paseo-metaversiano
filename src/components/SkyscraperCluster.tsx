@@ -42,39 +42,48 @@ export const SkyscraperCluster: React.FC<{
         height,
         width,
         depth,
-        intensity: 0.1 + (aqi / 10)
+        intensity: 0.1 + (aqi / 10),
+        rotationSpeed: 0.5 + (aqi * 0.3) // Velocidad de rotación basada en AQI
       });
     }
     
     return buildingsConfig;
   }, [buildingCount, aqi]);
 
-  // Animación del grupo
+  // Animación del grupo - MÁS RÁPIDA CON MÁS CONTAMINACIÓN
   useFrame((state) => {
     if (!groupRef.current) return;
     
     const time = state.clock.getElapsedTime();
     
-    // Rotación suave del conjunto
-    groupRef.current.rotation.y = time * 0.1;
+    // Rotación más rápida con mayor contaminación
+    const rotationSpeed = 0.1 + (aqi * 0.15); // Más AQI = más velocidad
+    groupRef.current.rotation.y = time * rotationSpeed;
     
     // Efecto de "respiración" más intenso para mayor contaminación
-    const breatheIntensity = aqi >= 4 ? 0.1 : 0.05;
-    const breathe = Math.sin(time * 2) * breatheIntensity + 1;
+    const breatheIntensity = aqi >= 4 ? 0.15 : 0.05;
+    const breatheSpeed = aqi >= 4 ? 3 : 2;
+    const breathe = Math.sin(time * breatheSpeed) * breatheIntensity + 1;
     groupRef.current.scale.y = breathe;
+    
+    // Oscilación lateral para alta contaminación
+    if (aqi >= 4) {
+      groupRef.current.position.x = position[0] + Math.sin(time * 1.5) * 0.02;
+      groupRef.current.position.z = position[2] + Math.cos(time * 1.5) * 0.02;
+    }
   });
 
-  // Sistema de partículas para contaminación alta
+  // Sistema de partículas MEJORADO para contaminación
   const ParticleSystem = useMemo(() => {
-    if (aqi < 4) return null;
+    if (aqi < 3) return null;
     
-    const particleCount = aqi * 20;
+    const particleCount = aqi * 30; // Más partículas
     const positions = new Float32Array(particleCount * 3);
     
     for (let i = 0; i < particleCount; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 1;
-      positions[i * 3 + 1] = Math.random() * 2;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 1;
+      positions[i * 3] = (Math.random() - 0.5) * 1.5;
+      positions[i * 3 + 1] = Math.random() * 3;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 1.5;
     }
     
     return (
@@ -89,10 +98,10 @@ export const SkyscraperCluster: React.FC<{
           />
         </bufferGeometry>
         <pointsMaterial
-          color={color}
-          size={0.02}
+          color={aqi >= 5 ? '#ff0000' : color}
+          size={0.03 + (aqi * 0.01)} // Partículas más grandes con más AQI
           transparent
-          opacity={0.6}
+          opacity={0.7}
           sizeAttenuation
         />
       </points>
@@ -141,7 +150,79 @@ export const SkyscraperCluster: React.FC<{
           />
         </mesh>
       )}
+      
+      {/* Sistema de humo MEJORADO */}
+      {aqi >= 3 && <SmokeSystem aqi={aqi} color={color} />}
     </group>
+  );
+};
+
+// Nuevo componente de sistema de humo
+const SmokeSystem: React.FC<{ aqi: number; color: string }> = ({ aqi }) => {
+  const smokeRef = useRef<THREE.Points>(null);
+  
+  const smokeParticles = useMemo(() => {
+    const particleCount = aqi * 50; // Muchas más partículas de humo
+    const positions = new Float32Array(particleCount * 3);
+    const velocities = new Float32Array(particleCount * 3);
+    
+    for (let i = 0; i < particleCount; i++) {
+      // Posición inicial desde las chimeneas de los edificios
+      positions[i * 3] = (Math.random() - 0.5) * 0.5;
+      positions[i * 3 + 1] = 0.5 + Math.random() * 0.5;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 0.5;
+      
+      // Velocidades del humo
+      velocities[i * 3] = (Math.random() - 0.5) * 0.01;
+      velocities[i * 3 + 1] = 0.02 + Math.random() * 0.02; // Subida
+      velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.01;
+    }
+    
+    return { positions, velocities, count: particleCount };
+  }, [aqi]);
+  
+  useFrame(() => {
+    if (!smokeRef.current) return;
+    
+    const positions = smokeRef.current.geometry.attributes.position.array as Float32Array;
+    
+    // Animar partículas de humo
+    for (let i = 0; i < smokeParticles.count; i++) {
+      // Movimiento hacia arriba y dispersión
+      positions[i * 3] += smokeParticles.velocities[i * 3];
+      positions[i * 3 + 1] += smokeParticles.velocities[i * 3 + 1];
+      positions[i * 3 + 2] += smokeParticles.velocities[i * 3 + 2];
+      
+      // Resetear partículas que se alejan mucho
+      if (positions[i * 3 + 1] > 3) {
+        positions[i * 3] = (Math.random() - 0.5) * 0.5;
+        positions[i * 3 + 1] = 0.5;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 0.5;
+      }
+    }
+    
+    smokeRef.current.geometry.attributes.position.needsUpdate = true;
+  });
+  
+  return (
+    <points ref={smokeRef}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={smokeParticles.count}
+          array={smokeParticles.positions}
+          itemSize={3}
+          args={[smokeParticles.positions, 3]}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        color={aqi >= 5 ? '#666666' : '#999999'}
+        size={0.04 + (aqi * 0.02)}
+        transparent
+        opacity={0.4 + (aqi * 0.1)}
+        sizeAttenuation
+      />
+    </points>
   );
 };
 

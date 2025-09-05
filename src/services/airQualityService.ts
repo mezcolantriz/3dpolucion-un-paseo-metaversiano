@@ -3,7 +3,7 @@ import type { AirQualityData, WeatherData } from '../types';
 import { AirQualityLevel, SpainCities } from '../types';
 
 // API gratuita de OpenWeatherMap para calidad del aire
-const OPENWEATHER_API_KEY = 'YOUR_API_KEY'; // Se debe configurar en variables de entorno
+const OPENWEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY || 'demo_key';
 const OPENWEATHER_BASE_URL = 'https://api.openweathermap.org/data/2.5';
 
 class AirQualityService {

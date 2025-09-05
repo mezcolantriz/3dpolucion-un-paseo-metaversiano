@@ -221,7 +221,6 @@ function App() {
           <Spain3DMap
             airQualityData={data}
             selectedLocation={selectedLocation}
-            onLocationSelect={setSelectedLocation}
           />
         )}
 
