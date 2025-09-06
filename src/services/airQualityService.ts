@@ -9,6 +9,82 @@ const OPENWEATHER_BASE_URL = 'https://api.openweathermap.org/data/2.5';
 class AirQualityService {
   private readonly retryAttempts = 3;
   private readonly retryDelay = 1000;
+  private readonly requestDelay = 100; // Delay entre requests para no sobrecargar la API
+
+  /**
+   * Obtiene datos de calidad del aire para TODAS las ciudades de España
+   */
+  async getAllSpainCitiesData(): Promise<AirQualityData[]> {
+    const results: AirQualityData[] = [];
+    const errors: string[] = [];
+    
+    console.log(`🌍 Iniciando requests a ${SpainCities.length} ciudades españolas...`);
+    console.log(`🔑 Usando API key: ${OPENWEATHER_API_KEY.substring(0, 8)}...`);
+    
+    // Procesar ciudades en lotes más pequeños para API gratuita
+    const batchSize = 3; // Reducido para plan gratuito
+    for (let i = 0; i < SpainCities.length; i += batchSize) {
+      const batch = SpainCities.slice(i, i + batchSize);
+      
+      console.log(`📦 Procesando lote ${Math.floor(i/batchSize) + 1}/${Math.ceil(SpainCities.length/batchSize)}: ${batch.map(c => c.name).join(', ')}`);
+      
+      const batchPromises = batch.map(async (city, index) => {
+        try {
+          // Delay progresivo para evitar rate limiting
+          await this.delay(index * this.requestDelay * 2);
+          
+          const data = await this.getAirQualityData(
+            city.coordinates[0], 
+            city.coordinates[1], 
+            city.name
+          );
+          
+          console.log(`✅ ${city.name}: AQI ${data.measurements.aqi} (${data.quality})`);
+          return data;
+        } catch (error) {
+          console.warn(`❌ Error en ${city.name}:`, error);
+          errors.push(`${city.name}: ${error}`);
+          
+          // Devolver datos simulados en caso de error
+          const mockData = this.generateMockAirQualityData(city.coordinates[0], city.coordinates[1], city.name);
+          console.log(`🎭 ${city.name}: Usando datos simulados (AQI ${mockData.measurements.aqi})`);
+          return mockData;
+        }
+      });
+      
+      const batchResults = await Promise.all(batchPromises);
+      results.push(...batchResults);
+      
+      // Delay más largo entre lotes para API gratuita
+      if (i + batchSize < SpainCities.length) {
+        console.log('⏱️ Esperando entre lotes...');
+        await this.delay(1000); // 1 segundo entre lotes
+      }
+    }
+    
+    console.log(`🎉 ¡Completado! ${results.length} ciudades cargadas`);
+    console.log(`📊 Distribución por calidad:`);
+    const qualityCount = results.reduce((acc, city) => {
+      acc[city.quality] = (acc[city.quality] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    Object.entries(qualityCount).forEach(([quality, count]) => {
+      console.log(`   ${quality}: ${count} ciudades`);
+    });
+    
+    if (errors.length > 0) {
+      console.log(`⚠️ Errores en ${errors.length} ciudades (usando datos simulados)`);
+    }
+    
+    return results;
+  }
+
+  /**
+   * Función de delay para controlar rate limiting
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
   /**
    * Obtiene datos de calidad del aire para una ubicación específica

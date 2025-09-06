@@ -19,9 +19,11 @@ export const useAirQuality = (autoRefresh: boolean = true, refreshInterval: numb
   const fetchData = useCallback(async () => {
     try {
       setError(null);
-      const airQualityData = await airQualityService.getAllSpainAirQualityData();
+      console.log('🌍 Iniciando carga de datos de todas las ciudades españolas...');
+      const airQualityData = await airQualityService.getAllSpainCitiesData();
       setData(airQualityData);
       setLastUpdate(new Date());
+      console.log(`✅ Datos cargados: ${airQualityData.length} ciudades`);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(`Error al obtener datos de calidad del aire: ${errorMessage}`);
