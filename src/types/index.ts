@@ -16,18 +16,31 @@ export interface AirQualityData {
     co: number;        // CO (mg/m³)
     aqi: number;       // Air Quality Index
   };
+  weather?: {         // NUEVO: Datos meteorológicos
+    main: string;     // "Rain", "Clear", "Clouds", etc.
+    description: string;
+    temperature: number;  // °C
+    humidity: number;     // %
+    windSpeed: number;    // m/s
+    windDirection: number; // grados
+    visibility: number;   // metros
+    pressure: number;     // hPa
+    icon: string;        // código del icono
+  };
   timestamp: string;
   quality: AirQualityLevel;
 }
 
-export enum AirQualityLevel {
-  EXCELLENT = 'excellent',
-  GOOD = 'good',
-  MODERATE = 'moderate',
-  POOR = 'poor',
-  VERY_POOR = 'very_poor',
-  HAZARDOUS = 'hazardous'
-}
+export const AirQualityLevel = {
+  EXCELLENT: 'excellent',
+  GOOD: 'good',
+  MODERATE: 'moderate',
+  POOR: 'poor',
+  VERY_POOR: 'very_poor',
+  HAZARDOUS: 'hazardous'
+} as const;
+
+export type AirQualityLevel = typeof AirQualityLevel[keyof typeof AirQualityLevel];
 
 export interface WeatherData {
   location: {

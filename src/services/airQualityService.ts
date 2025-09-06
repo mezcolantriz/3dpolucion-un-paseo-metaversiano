@@ -12,13 +12,13 @@ class AirQualityService {
   private readonly requestDelay = 100; // Delay entre requests para no sobrecargar la API
 
   /**
-   * Obtiene datos de calidad del aire para TODAS las ciudades de España
+   * Obtiene datos de calidad del aire para TODAS las ciudades de España + CLIMA
    */
   async getAllSpainCitiesData(): Promise<AirQualityData[]> {
     const results: AirQualityData[] = [];
     const errors: string[] = [];
     
-    console.log(`🌍 Iniciando requests a ${SpainCities.length} ciudades españolas...`);
+    console.log(`🌍 Iniciando requests a ${SpainCities.length} ciudades españolas + DATOS METEOROLÓGICOS...`);
     console.log(`🔑 Usando API key: ${OPENWEATHER_API_KEY.substring(0, 8)}...`);
     
     // Procesar ciudades en lotes más pequeños para API gratuita
@@ -33,21 +33,37 @@ class AirQualityService {
           // Delay progresivo para evitar rate limiting
           await this.delay(index * this.requestDelay * 2);
           
-          const data = await this.getAirQualityData(
-            city.coordinates[0], 
-            city.coordinates[1], 
-            city.name
-          );
+          // Obtener datos de aire Y clima simultáneamente
+          const [airData, weatherData] = await Promise.all([
+            this.getAirQualityData(city.coordinates[0], city.coordinates[1], city.name),
+            this.getWeatherData(city.coordinates[0], city.coordinates[1], city.name)
+          ]);
           
-          console.log(`✅ ${city.name}: AQI ${data.measurements.aqi} (${data.quality})`);
-          return data;
+          // Combinar datos de aire + clima transformando el formato
+          const combinedData: AirQualityData = {
+            ...airData,
+            weather: {
+              main: weatherData.current.description.split(' ')[0] || 'Clear',
+              description: weatherData.current.description,
+              temperature: weatherData.current.temperature,
+              humidity: weatherData.current.humidity,
+              windSpeed: weatherData.current.windSpeed,
+              windDirection: weatherData.current.windDirection,
+              visibility: 10000, // valor por defecto
+              pressure: weatherData.current.pressure,
+              icon: this.getWeatherIcon(weatherData.current.weatherCode)
+            }
+          };
+          
+          console.log(`✅ ${city.name}: AQI ${airData.measurements.aqi} (${airData.quality}) + 🌤️ ${weatherData.current.description} ${weatherData.current.temperature}°C`);
+          return combinedData;
         } catch (error) {
           console.warn(`❌ Error en ${city.name}:`, error);
           errors.push(`${city.name}: ${error}`);
           
           // Devolver datos simulados en caso de error
-          const mockData = this.generateMockAirQualityData(city.coordinates[0], city.coordinates[1], city.name);
-          console.log(`🎭 ${city.name}: Usando datos simulados (AQI ${mockData.measurements.aqi})`);
+          const mockData = this.generateMockAirQualityDataWithWeather(city.coordinates[0], city.coordinates[1], city.name);
+          console.log(`🎭 ${city.name}: Usando datos simulados (AQI ${mockData.measurements.aqi}) + 🌤️ ${mockData.weather?.main}`);
           return mockData;
         }
       });
@@ -105,6 +121,20 @@ class AirQualityService {
       const data = response.data;
       const measurements = data.list[0].components;
       const aqi = data.list[0].main.aqi;
+
+      // LOG PARA CONFIRMAR DATOS REALES
+      console.log(`🌍 DATOS REALES API para ${locationName}:`, {
+        timestamp: new Date().toISOString(),
+        api_response: {
+          aqi: aqi,
+          pm25: measurements.pm2_5,
+          pm10: measurements.pm10,
+          no2: measurements.no2,
+          o3: measurements.o3
+        },
+        coordinates: [lat, lon],
+        source: 'OpenWeatherMap API REAL'
+      });
 
       return {
         location: {
@@ -278,6 +308,46 @@ class AirQualityService {
         description: 'Cielo despejado'
       },
       timestamp: new Date().toISOString()
+    };
+  }
+
+  /**
+   * Convierte código meteorológico a icono
+   */
+  private getWeatherIcon(weatherCode: number): string {
+    if (weatherCode >= 200 && weatherCode < 300) return '11d'; // Tormenta
+    if (weatherCode >= 300 && weatherCode < 400) return '09d'; // Llovizna
+    if (weatherCode >= 500 && weatherCode < 600) return '10d'; // Lluvia
+    if (weatherCode >= 600 && weatherCode < 700) return '13d'; // Nieve
+    if (weatherCode >= 700 && weatherCode < 800) return '50d'; // Niebla
+    if (weatherCode === 800) return '01d'; // Despejado
+    if (weatherCode > 800) return '02d'; // Nubes
+    return '01d'; // Por defecto
+  }
+
+  /**
+   * Genera datos simulados de calidad del aire + clima
+   */
+  generateMockAirQualityDataWithWeather(latitude: number, longitude: number, cityName: string): AirQualityData {
+    const baseData = this.generateMockAirQualityData(latitude, longitude, cityName);
+    
+    // Generar clima simulado
+    const weatherConditions = ['Clear', 'Clouds', 'Rain', 'Drizzle', 'Snow', 'Mist'];
+    const randomWeather = weatherConditions[Math.floor(Math.random() * weatherConditions.length)];
+    
+    return {
+      ...baseData,
+      weather: {
+        main: randomWeather,
+        description: randomWeather.toLowerCase(),
+        temperature: Math.random() * 30 + 5, // 5-35°C
+        humidity: Math.random() * 60 + 30,    // 30-90%
+        windSpeed: Math.random() * 10,        // 0-10 m/s
+        windDirection: Math.random() * 360,   // 0-360°
+        visibility: Math.random() * 5000 + 5000, // 5-10km
+        pressure: Math.random() * 50 + 1000,  // 1000-1050 hPa
+        icon: randomWeather === 'Clear' ? '01d' : randomWeather === 'Clouds' ? '02d' : '10d'
+      }
     };
   }
 
